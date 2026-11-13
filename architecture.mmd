@@ -1,0 +1,60 @@
+flowchart TD
+    %% User and Client Interaction
+    User(["👤 User"]) --> UI["💻 Frontend (Streamlit / Web UI)"]
+    UI --> Upload["📤 Document Upload (PDF, TXT, PNG, JPG)"]
+    
+    %% Backend Ingestion & Validation
+    Upload --> Backend["⚙️ Backend Controller (DocuMind Pipeline)"]
+    Backend --> Validation{"🔍 Validate File Format & Size"}
+    
+    %% Error Path: Invalid File
+    Validation -- "Invalid / Corrupt" --> ErrFile["⚠️ Error Handler: Display File Alert"]
+    ErrFile --> UI
+    
+    %% Routing
+    Validation -- "Valid File" --> DocDetect{"📄 Document Type Detection"}
+    
+    %% Extraction Branches
+    DocDetect -- "Digital PDF (.pdf with text layer)" --> PdfExtract["📑 Digital PDF Extraction (pypdf)"]
+    DocDetect -- "Scanned PDF or Image (.png, .jpg)" --> Preprocess["🖼️ Image Preprocessing (Pillow: Grayscale & Contrast)"]
+    Preprocess --> TesseractOCR["👁️ Tesseract OCR Engine (tesseract.exe)"]
+    DocDetect -- "Plain Text (.txt)" --> RawText["📝 Plain Text Reader"]
+    
+    %% Extraction Error Handling
+    PdfExtract -- "Empty Text Layer" --> Preprocess
+    PdfExtract -- "Extraction Error" --> ErrExtract["⚠️ Error Handler: Extraction Failure"]
+    TesseractOCR -- "No Text Detected" --> ErrExtract
+    ErrExtract --> UI
+    
+    %% Cleaning and Normalization
+    PdfExtract -- "Raw Text" --> TextCleaning["🧹 Text Cleaning & Normalization"]
+    TesseractOCR -- "Raw OCR Text" --> TextCleaning
+    RawText -- "Raw Text" --> TextCleaning
+    
+    %% AI Processing
+    TextCleaning --> PromptPrep["📋 Context Assembly & Prompt Construction"]
+    PromptPrep --> AICognition{"🤖 AI Processing Engine"}
+    
+    %% AI Decision & Fallback
+    AICognition -- "Online & API Key Configured" --> LLMApi["☁️ Gemini LLM API"]
+    AICognition -- "Offline or API Error" --> OfflineFallback["⚙️ Offline Heuristic Rule Engine"]
+    LLMApi -- "API Failure / Timeout" --> OfflineFallback
+    
+    %% Output Synthesis
+    LLMApi --> StructuredGen["📊 Structured Analysis Generation"]
+    OfflineFallback --> StructuredGen
+    
+    %% Specific Deliverables
+    StructuredGen --> SectionSummary["📌 Executive Summary"]
+    StructuredGen --> SectionSimplify["💡 Plain-English Simplification"]
+    StructuredGen --> SectionGlossary["📖 Terminology Explanation & Jargon Buster"]
+    StructuredGen --> SectionWarnings["⚠️ Critical Numbers, Conditions & Warnings"]
+    StructuredGen --> SectionActions["✅ Actionable Takeaways"]
+    
+    %% Results Presentation
+    SectionSummary --> Display["🖥️ Results Display (Dual-View & Interactive Tabs)"]
+    SectionSimplify --> Display
+    SectionGlossary --> Display
+    SectionWarnings --> Display
+    SectionActions --> Display
+    Display --> User
